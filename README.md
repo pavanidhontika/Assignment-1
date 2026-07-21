@@ -1,63 +1,70 @@
-# Medical Insurance Cost Prediction using Multiple Linear Regression
+# Adult Census Income Classification
 
 ## Objective
-To build a Multiple Linear Regression model that predicts an individual's medical
-insurance charges based on personal and health-related attributes such as age, sex,
-BMI, number of children, smoking status, and region.
+Predict whether an individual's annual income exceeds $50K based on 1994 US Census
+demographic data (age, education, occupation, marital status, hours worked, etc.).
 
 ## Dataset
-Medical Cost Personal Insurance Dataset (Kaggle):
-https://www.kaggle.com/datasets/mirichoi0218/insurance
+Adult Census Income Dataset (UCI Machine Learning Repository / Kaggle):
+https://archive.ics.uci.edu/dataset/2/adult
 
-*(Dataset is not included in this repository — download it from the Kaggle link above
-and place `insurance.csv` in the project root before running the notebook.)*
+*(Dataset is not included in this repository — download `adult.csv` from the link
+above and place it in the project root before running the notebook.)*
 
 ## Libraries Used
-- pandas
-- numpy
-- matplotlib
-- scikit-learn (train_test_split, LinearRegression, metrics)
+- pandas, numpy
+- matplotlib, seaborn
+- scikit-learn (LogisticRegression, RandomForestClassifier, preprocessing, metrics)
 
 ## Methodology
-1. **Data Understanding** – Loaded the dataset, inspected the first five records, and
-   identified numerical features (age, bmi, children), categorical features
-   (sex, smoker, region), and the target variable (charges).
-2. **Data Preprocessing** – Checked for missing values (none found), encoded the
-   categorical variables (`sex` and `smoker` as binary labels, `region` via one-hot
-   encoding), and split the data into 80% training and 20% testing sets.
-3. **Model Development** – Trained a Multiple Linear Regression model on the encoded
-   features to predict `charges`, then generated predictions on the test set.
-4. **Model Evaluation** – Evaluated the model using MAE, MSE, and R² score, and
-   visualized performance with an Actual vs Predicted scatter plot.
+1. **Data Understanding** – Loaded 32,561 records across 15 columns; examined the class
+   balance of the target (`income`: ~76% `<=50K`, ~24% `>50K`).
+2. **Data Cleaning** – Replaced `'?'` placeholders in `workclass`, `occupation`, and
+   `native.country` with NaN and dropped incomplete rows (~7% of data), then removed
+   duplicates, leaving 30,139 clean records.
+3. **EDA** – Visualized age distribution, income class balance, and income by
+   education level.
+4. **Feature Engineering** – Dropped `education` (redundant with `education.num`) and
+   `fnlwgt` (a census sampling weight); one-hot encoded categorical variables; scaled
+   numeric features; split into 80% train / 20% test (stratified).
+5. **Model Training** – Trained and compared Logistic Regression (linear baseline) and
+   Random Forest (non-linear ensemble).
+6. **Evaluation** – Compared models using Accuracy, Precision, Recall, F1, and ROC-AUC;
+   inspected the Random Forest confusion matrix, ROC curve, and feature importances.
 
 ## Results
-| Metric | Value |
-|---|---|
-| MAE | 4181.19 |
-| MSE | 33,596,915.85 |
-| R² Score | 0.7836 |
+
+| Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
+|---|---|---|---|---|---|
+| Logistic Regression | 0.852 | 0.745 | 0.618 | 0.676 | 0.909 |
+| **Random Forest** | **0.863** | **0.817** | 0.578 | 0.677 | **0.919** |
+
+Random Forest classification report (test set):
+- `<=50K`: precision 0.87, recall 0.96, f1 0.91
+- `>50K`: precision 0.82, recall 0.58, f1 0.68
+- Overall accuracy: 0.86
+
+![Evaluation](evaluation.png)
+![Feature Importance](feature_importance.png)
 
 **Observations:**
-- The model explains roughly 78% of the variance in insurance charges, indicating a
-  reasonably good linear fit.
-- `smoker` status has by far the largest coefficient magnitude, making it the single
-  strongest predictor of higher charges.
-- The model tends to underestimate charges for a cluster of high-cost individuals
-  (typically smokers with high BMI), suggesting the true relationship is not purely
-  linear.
-
-![Actual vs Predicted](actual_vs_predicted.png)
+- Random Forest outperforms Logistic Regression on every metric, especially ROC-AUC,
+  showing it captures non-linear feature interactions the linear model misses.
+- `marital.status`, `capital.gain`, `age`, and `education.num` are the strongest
+  predictors of higher income.
+- Because the classes are imbalanced (~76/24 split), recall on the `>50K` class is
+  noticeably lower than on `<=50K` — the model is more conservative about predicting
+  the minority (high-income) class.
 
 ## Conclusion
-This project built a Multiple Linear Regression model to predict medical insurance
-charges using age, sex, BMI, number of children, smoking status, and region. The model
-achieved a good fit on the test data (R² ≈ 0.78), with smoking status emerging as the
-single most influential factor in determining charges, followed by age and BMI. Region
-and sex had comparatively minor effects. These findings align with real-world
-expectations, since smoking and obesity are well-known health risk factors that
-insurers price heavily into premiums. However, a key limitation of Linear Regression
-here is its assumption of a linear relationship between features and charges; in
-reality, the interaction between smoking, BMI, and age produces charges that grow
-non-linearly, causing the model to underestimate costs for high-risk individuals. A
-more flexible model, such as a polynomial or tree-based regression, could potentially
-capture these interactions more accurately.
+This project classified individuals' income level (`<=50K` vs `>50K`) using 1994 US
+Census demographic data. After cleaning missing values encoded as `'?'` and engineering
+categorical features, both Logistic Regression and Random Forest models were trained
+and compared. The Random Forest model achieved the stronger overall performance, with
+marital status, capital gains, age, and education level emerging as the most
+influential predictors of higher income. These results reflect intuitive real-world
+patterns: higher education and more work experience (age) correlate with higher
+earnings, and capital gains often indicate existing wealth. A key limitation is class
+imbalance in the target variable, which biases the model toward the majority class
+(`<=50K`) and lowers recall on high earners — an issue that could be addressed with
+class weighting, oversampling (e.g. SMOTE), or threshold tuning in future work.
